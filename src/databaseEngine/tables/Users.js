@@ -10,23 +10,23 @@ exports.createUserModel = async function createModel(sequelize) {
                 primaryKey: true
             },
             UserLogin: {
-                type: DataTypes.CHAR,
+                type: DataTypes.TEXT,
                 allowNull: false,
             },
             UserMail: {
-                type: DataTypes.CHAR,
+                type: DataTypes.TEXT,
                 allowNull: false,
             },
             UserPassword: {
-                type: DataTypes.CHAR,
+                type: DataTypes.TEXT,
                 allowNull: false,
             },
             UserRole: {
-                type: DataTypes.CHAR,
+                type: DataTypes.TEXT,
                 allowNull: false,
             },
             RegTime: {
-                type: DataTypes.CHAR,
+                type: DataTypes.TIME,
                 allowNull: false,
             },
         },

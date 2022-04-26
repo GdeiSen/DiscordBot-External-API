@@ -1,7 +1,15 @@
 {
   "dependencies": {
+    "axios": "^0.26.1",
+    "express": "^4.17.3",
     "sequelize": "^6.14.1",
+    "socket.io": "^4.4.1",
+    "socket.io-client": "^4.4.1",
     "tedious": "^14.1.0",
+    "uuid": "^8.3.2",
     "ws": "^8.4.2"
+  },
+  "scripts": {
+    "start": "node index"
   }
 }
