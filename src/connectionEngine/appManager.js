@@ -1,6 +1,6 @@
 const EventEmitter = require('events');
 const emitter = new EventEmitter;
-const config = require('../../../config.json');
+const config = require('../../config.json');
 const { io } = require('socket.io-client');
 const { v4: uuidv4 } = require('uuid');
 const axios = require('axios').default;
