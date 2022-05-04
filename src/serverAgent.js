@@ -1,5 +1,5 @@
-const { ExternalClientManager } = require("./websocketEngine/client/websocketManager");
-const { ExternalServerManager } = require("./websocketEngine/server/websocketManager");
+const { ExternalClientManager } = require("./connectionEngine/client/clientManager");
+const { ExternalServerManager } = require("./connectionEngine/server");
 const { AuthDataBase } = require("./databaseEngine/databaseManager");
 const EventEmitter = require('events');
 const messageEmitter = new EventEmitter;
