@@ -5,11 +5,8 @@ const MessageEmitter = new EventEmitter;
 
 class AppConnectionManager {
 
-  constructor(queueName) {
-    this.queueName = queueName
-  }
-
-  connect() {
+  connect(queueName) {
+    this.queueName = queueName;
     let self = this
     amqp.connect('amqp://localhost', function (error0, connection) {
       if (error0) { throw error0; }
@@ -19,28 +16,39 @@ class AppConnectionManager {
         channel.assertQueue('', { exclusive: true }, async function (error2, q) {
           if (error2) { throw error2; }
           self.q = q;
-          channel.consume(q.queue, function (msg) { MessageEmitter.emit(msg.properties.correlationId, msg) }, { noAck: true });
+          channel.consume(q.queue, function (msg) {
+            MessageEmitter.emit(msg.properties.correlationId, msg);
+            channel.ack(msg);
+          }, { noAck: false });
         });
       });
     });
   }
 
-  async send(msg) {
-    if (!this.channel) return 0;
+  async get(msg) {
+    if (!this.channel) { console.log('ERROR Connection Is Not Created!'); return 0 };
     let correlationId = uuidv4();
     const promise = new Promise((resolve, reject) => {
       this.channel.sendToQueue(this.queueName, Buffer.from(JSON.stringify(msg)), {
         correlationId: correlationId,
-        replyTo: this.q.queue
+        replyTo: this.q.queue,
+        type: 'request',
       });
-      console.log(' [x] Requesting', msg.request);
+      console.log(`[ ]=----(${msg.request} request)---->`);
       MessageEmitter.once(correlationId, (msg) => {
+        console.log(`[ ]<----(responce)----=`);
         resolve(JSON.parse(msg.content.toString()))
       })
     })
     return promise;
   }
 
+  async send(msg) {
+    if (!this.channel) { console.log('ERROR Connection Is Not Created!'); return 0 };
+    this.channel.sendToQueue(this.queueName, Buffer.from(JSON.stringify(msg)), {
+    });
+    console.log(`[ ]-----(${msg.request})---->`);
+  }
 }
 exports.AppConnectionManager = AppConnectionManager;
 

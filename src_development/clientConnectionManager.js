@@ -1,9 +1,10 @@
-const socketEmitter = require('events');
 const config = require('../config.json');
 const express = require('express');
 const http = require('http');
 const { Server } = require('socket.io');
 const EventEmitter = require('events');
+const socketEmitter = new EventEmitter();
+const  cors = require("cors");
 
 class ClientConnectionManager extends EventEmitter {
     constructor() {
@@ -12,11 +13,12 @@ class ClientConnectionManager extends EventEmitter {
         this.socketStatus = { state: 'offline', info: 'not_connected' };
         this.httpStatus = { state: 'offline', info: 'not_connected' };
         this.app = express();
+        this.app.use(cors())
         this.server = http.createServer(this.app);
     }
 
-    async createConnect() {
-        this.io = new Server(this.server);
+    async connect() {
+        this.io = new Server(this.server, {cors: '*'});
         this.io.on("connection", (socket) => {
             this.socket = socket;
             this.socketStatus = { state: 'online', info: 'was_connected' };
