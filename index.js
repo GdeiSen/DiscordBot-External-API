@@ -1,10 +1,15 @@
-console.clear();
-// const { ServerAgent } = require("./src/serverAgent");
-// const serverAgent = new ServerAgent();
-// serverAgent.createWebSocketConnections();
 const { GatewayAgent } = require('./src_development/agent.js');
 const gatewayAgent = new GatewayAgent();
-gatewayAgent.connect();
+global.agent = gatewayAgent;
+gatewayAgent.connect()
 setTimeout(() => {
-    gatewayAgent.bindAllConnections({retry: true});
-}, 1000);
+    gatewayAgent.createRouters()
+}, 2000);
+
+
+const localtunnel = require('localtunnel');
+
+(async () => {
+  const tunnel = await localtunnel({ port: 5000 });
+  console.log(tunnel.url);
+})();

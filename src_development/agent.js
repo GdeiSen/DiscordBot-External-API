@@ -1,60 +1,51 @@
-const { response } = require('express');
-const { request } = require('http');
-const { AppConnectionManager } = require('./appConnectionManager.js');
-const { ClientConnectionManager } = require('./clientConnectionManager')
-
+const { AppRouter } = require('./routers/appRouter.js');
+const { ClientConnectionManager } = require('./managers/clientConnectionManager');
+const { ClientRouter } = require('./routers/clientRouter.js');
+const { DatabaseRouter } = require('./routers/databaseRouter.js');
+const { TokenRouter } = require('./routers/tokenRouter.js');
+const { ConnectionManager } = require('../../RabbitMQConnectionUtil/index');
+const config = require('../config.json')
 exports.GatewayAgent = class GatewayAgent {
     constructor() {
         this.clientConnectionManager = new ClientConnectionManager();
-        this.appConnectionManager = new AppConnectionManager();
-        this.clientAttemptTimer;
+        this.appConnectionManager = new ConnectionManager({
+            dispatchTo: config.TO_APP_QUEUE,
+            consumeOn: config.FROM_APP_QUEUE,
+            durable: true,
+            name: "APP"
+        });
+        this.databaseConnectionManager = new ConnectionManager({
+            dispatchTo: config.TO_DATA_QUEUE,
+            consumeOn: config.FROM_DATA_QUEUE,
+            durable: true,
+            name: "DATABASE"
+        });
+        this.tokenConnectionManager = new ConnectionManager({
+            dispatchTo: config.TO_TOKEN_QUEUE,
+            consumeOn: config.FROM_TOKEN_QUEUE,
+            durable: true,
+            name: "TOKENS"
+        });
     }
 
     connect() {
-        this.appConnectionManager.connect('rpc_queue');
+        this.appConnectionManager.connect();
         this.clientConnectionManager.connect();
+        this.databaseConnectionManager.connect();
+        this.tokenConnectionManager.connect();
     }
 
-    bindAllConnections(options) {
-        const self = this
-        this.bindHTTPClientConnection();
-        bindSockets();
-        function bindSockets() {
-            if (self.bindSocketClientConnection() == false && options.retry == true) {
-                setTimeout(() => {bindSockets()}, 8000);
-            }
-        }
-    }
+    createRouters() {
+        this.clientRouter = new ClientRouter(this);
+        this.appRouter = new AppRouter(this);
+        this.databaseRouter = new DatabaseRouter(this);
+        this.tokenRouter = new TokenRouter(this);
 
-    bindHTTPClientConnection() {
-        let clientApp = this.clientConnectionManager.app;
-        let ServiceApp = this.appConnectionManager;
-        clientApp.get('/servers', async (request, response) => {
-            response.send(await ServiceApp.get({ request: 'servers' }))
-        })
-        clientApp.get('/serverUsers/:serverId', async (request, response) => {
-            response.send(await ServiceApp.get({ request: 'serverUsers', serverId: request.params.serverId }) )
-        })
-        clientApp.get('/currentPlayback/:serverId', async (request, response) => {
-            response.send(await ServiceApp.get({ request: 'currentPlayback', serverId: request.params.serverId }))
-        })
-        clientApp.get('/serverQueue/:serverId', async (request, response) => {
-            response.send(await ServiceApp.get({ request: 'serverQueue', serverId: request.params.serverId }))
-        })
-        return true;
-    }
-
-    bindSocketClientConnection() {
-        if (!this.clientConnectionManager.socket) { console.log('🟥 Socket Bind Error, Socket Is Not Connected! Attempt To Reconnect In 8 Sec'); return false }
-        this.clientConnectionManager.socket.on('request', (message) => {
-            switch (message.path) {
-                case 'skipSongFunction': { this.appConnectionManager.send({ request: 'skipSongFunction', serverId: message.args.serverId }); break }
-                case 'removeSongFunction': { this.appConnectionManager.send({ request: 'removeSongFunction', serverId: message.args.serverId }); break }
-                case 'togglePauseSongFunction': { this.appConnectionManager.send({ request: 'togglePauseSongFunction', serverId: message.args.serverId }); break }
-                case 'disconnectFunction': { this.appConnectionManager.send({ request: 'disconnectFunction', serverId: message.args.serverId }); break }
-                default: break;
-            }
-        })
-        return true;
+        this.clientRouter.createExpressRouter();
+        this.clientRouter.createSocketRouter();
+        this.appRouter.createRouter();
+        this.databaseRouter.createRouter();
+        this.tokenRouter.createRouter();
     }
 }
+
